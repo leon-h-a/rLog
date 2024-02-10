@@ -2,7 +2,7 @@ from dataclasses import dataclass
 
 
 @dataclass
-class ExchangePayload:
+class Message:
     timestamp: int
     device_id: str
     streams: list

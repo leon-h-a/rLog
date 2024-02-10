@@ -2,7 +2,7 @@ import time
 import json
 import unittest
 from rLog.parsing import serialize, deserialize
-from rLog.models import ExchangePayload
+from rLog.models import Message
 
 
 class TestParsing(unittest.TestCase):
@@ -37,7 +37,7 @@ class TestParsing(unittest.TestCase):
         )
         data = bytes(jsoned, "ascii")
         generated = deserialize(data)
-        expected = ExchangePayload(
+        expected = Message(
             timestamp=ts,
             device_id="device_3258",
             streams=['csv, db'],
