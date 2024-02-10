@@ -1,7 +1,7 @@
 import time
 import json
 import unittest
-from rLog.parsing import serialize, deserialize
+from rLog.parsers import serialize, deserialize
 from rLog.models import Message
 
 

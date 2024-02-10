@@ -51,3 +51,7 @@ action (file write might succeed but db write might fail).
 ### Parsing
 Both generator and receiver objects must implement same parsing logic.
 Messages are transported in JSON format.
+
+### ToDo
+Implement hash field in message header with timeout on response (ACK/NACK)
+if hash does not match locally saved creds.
