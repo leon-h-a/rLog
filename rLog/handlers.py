@@ -1,5 +1,9 @@
-from multiprocessing import Process
 from socket import socket
+from multiprocessing import Process
+from rLog import logger
+from rLog.models import Message
+from rLog.parsers import deserialize
+from rLog.settings import csv_evse_pd_cols
 
 
 class Handler(Process):
@@ -7,27 +11,59 @@ class Handler(Process):
         super().__init__()
         self.conn = conn
         self.addr = addr
+        self.header_exists = False
 
-    def csv_output(self, data):
-        print(f"csv: {data}")
+    def csv_output(self, msg: Message) -> bool:
+        csv_out = (f"{msg.timestamp}"
+                   f",{msg.device_id}"
+                   )
+        for col in csv_evse_pd_cols:
+            try:
+                csv_out += f",{msg.payload[col]}"
 
-    def db_output(self, data):
-        print(f"db: {data}")
+            except KeyError as err:
+                logger.warning(f"Key not found: {err}")
+                return False
+
+        try:
+            with open("../csv/test.csv", "a+") as csv:
+                if not self.header_exists:
+                    header = "timestamp,device_id"
+                    for col in csv_evse_pd_cols:
+                        header += f",{col}"
+                    csv.write(header + "\n")
+                    self.header_exists = True
+                else:
+                    csv.write(csv_out + "\n")
+
+        except Exception as err:
+            print(err)
+            return False
+
+        return True
+
+    def db_output(self, msg: Message):
+        print(f"db: {msg}")
 
     def run(self):
-        print("handler running")
-        # todo: get self attrs and check streams list (if inside, use it)
+        logger.info("Handler running")
         while True:
             data = self.conn.recv(1024)
-            print(data)
             if not data:
                 self.exit()
                 break
+            else:
+                msg = deserialize(data)
+                logger.info(msg)
+
+                if "csv" in msg.streams:
+                    self.csv_output(msg=msg)
+
             self.conn.sendall(bytes("ACK", "ascii"))
 
     def exit(self):
         self.conn.close()
-        print("client disconnected")
+        logger.info(f"client disconnected: {self.addr}")
 
 
 if __name__ == "__main__":
