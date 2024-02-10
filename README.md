@@ -47,3 +47,7 @@ data integrity and writes data to requested output/s
 
 Handler responds to client with ACK/NACK bits per requested write
 action (file write might succeed but db write might fail).
+
+### Parsing
+Both generator and receiver objects must implement same parsing logic.
+Messages are transported in JSON format.
