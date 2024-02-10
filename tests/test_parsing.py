@@ -13,16 +13,19 @@ class TestParsing(unittest.TestCase):
 
     def test_serialize(self):
         ts = int(time.time())
-        generated = serialize(timestamp=ts, device_id="device_3258", streams=["csv, db"],
+        generated = serialize(timestamp=ts, device_id="device_3258", streams=["csv", "db"],
                               temperature=12,
                               humidity=76,
                               state=1
                               )
-        expected = bytes("timestamp: " + str(ts) + ", "
-                         "device_id: device_3258, "
-                         "streams: ['csv, db'], "
-                         "payload: {'temperature': 12, 'humidity': 76, 'state': 1}",
-                         "ascii")
+        expected = bytes(json.dumps(
+            dict(
+                timestamp=ts,
+                device_id="device_3258",
+                streams=["csv", "db"],
+                payload={'temperature': 12, 'humidity': 76, 'state': 1}
+            )
+        ), "ascii")
         self.assertEqual(generated, expected)
 
     def test_deserialize(self):
@@ -31,7 +34,7 @@ class TestParsing(unittest.TestCase):
             dict(
                 timestamp=ts,
                 device_id="device_3258",
-                streams=['csv, db'],
+                streams=["csv", "db"],
                 payload={'temperature': 12, 'humidity': 76, 'state': 1}
             )
         )
@@ -40,7 +43,7 @@ class TestParsing(unittest.TestCase):
         expected = Message(
             timestamp=ts,
             device_id="device_3258",
-            streams=['csv, db'],
+            streams=["csv", "db"],
             payload={'temperature': 12, 'humidity': 76, 'state': 1}
         )
         self.assertEqual(generated, expected)
