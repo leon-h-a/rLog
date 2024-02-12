@@ -17,7 +17,7 @@ class Receiver(Endpoint):
         self.handler_processes = list()
 
     def run_process(self):
-        HOST, PORT = "localhost", 9999
+        HOST, PORT = "0.0.0.0", 9999
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             s.bind((HOST, PORT))
             s.listen()

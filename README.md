@@ -55,3 +55,14 @@ Messages are transported in JSON format.
 ### ToDo
 Implement hash field in message header with timeout on response (ACK/NACK)
 if hash does not match locally saved creds.
+
+### Grafana/InfluxDB
+When adding InfluxDB source to Grafana:
+
+Auth: basic auth toggle
+Basic auth details: user/pass
+custom HTTP Headers:
+Header: "Authorization" Value: "Token <token_string>"
+Database: <bucket_name>
+HTTP method: GET
+Min time interval: 1s
