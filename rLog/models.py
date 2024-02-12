@@ -4,6 +4,9 @@ from dataclasses import dataclass
 
 @dataclass
 class Message:
+    # ts, dev_id and streams are must have
+    # payload is dict that can have variable
+    # number of k-v pairs
     timestamp: int
     device_id: str
     streams: list
