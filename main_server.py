@@ -1,20 +1,19 @@
+import os
 import socket
-from rLog.models import Endpoint
-from rLog.handlers import Handler
+from rLog.remote.handler import Handler
 from rLog import logger
 
 
-class Receiver(Endpoint):
+class Dispatch:
     """
     setup outputs (filepaths, ORMS (+db connect), etc...)
     """
     def __init__(self):
         super().__init__()
-        self.clients = 0
         self.handler_processes = list()
 
     def run_process(self):
-        host, port = "0.0.0.0", 9999
+        host, port = os.environ['rLogLocalIP'], int(os.environ['rLogLocalPORT'])
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             logger.info(f"Receiver listening {host}:{port}")
             s.bind((host, port))
@@ -43,5 +42,5 @@ class Receiver(Endpoint):
 
 
 if __name__ == "__main__":
-    asdf = Receiver()
-    asdf.run_process()
+    dispatch = Dispatch()
+    dispatch.run_process()

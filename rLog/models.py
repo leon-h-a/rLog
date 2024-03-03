@@ -1,25 +1,45 @@
 from abc import ABCMeta
-from dataclasses import dataclass
 
 
-@dataclass
-class Message:
-    # ts, dev_id and streams are must have
-    # payload is dict that can have variable
-    # number of k-v pairs
-    timestamp: int
-    device_id: str
-    streams: list
-    payload: dict
+class Parser(metaclass=ABCMeta):
+    identifier = None
+
+    def __init__(self, serialized_msg):
+        self.serialized_msg = serialized_msg
+
+    def _sanitize(self) -> str:
+        raise NotImplementedError
+
+    def _build_for_queue(self) -> str:
+        raise NotImplementedError
+
+    def parse(self):
+        self._sanitize()
+        self._build_for_queue()
 
 
-class Endpoint(metaclass=ABCMeta):
-    def __init__(self):
+class CSV(Parser):
+    identifier = "csv"
+
+    def __init__(self, serialized_msg):
+        super().__init__(serialized_msg)
+
+    def _sanitize(self) -> str:
+        # todo: payload must not be nested
         pass
 
-    def run_process(self):
-        raise NotImplementedError
+    def _build_for_queue(self) -> str:
+        pass
 
-    def kill_process(self):
-        # join child spawned processes
-        raise NotImplementedError
+
+class PSQL(Parser):
+    identifier = "psql"
+
+    def __init__(self, serialized_msg):
+        super().__init__(serialized_msg)
+
+    def _sanitize(self) -> str:
+        pass
+
+    def _build_for_queue(self) -> str:
+        pass

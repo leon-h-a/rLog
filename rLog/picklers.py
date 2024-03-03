@@ -1,6 +1,5 @@
 import json
 from rLog import logger
-from rLog.models import Message
 
 
 def serialize(timestamp: int, device_id: str, streams: list, **payload) -> bytes:
@@ -17,13 +16,14 @@ def serialize(timestamp: int, device_id: str, streams: list, **payload) -> bytes
     return bytes(stringed, "ascii")
 
 
-def deserialize(data: bytes) -> Message:
+def deserialize(data: bytes) -> str:
     # If Data field is omitted, msg shall be treated as keepalive
     loaded = json.loads(data.decode('utf8').replace("'", '"'))
     logger.debug(loaded)
-    return Message(
-        timestamp=loaded["timestamp"],
-        device_id=loaded["device_id"],
-        streams=loaded["streams"],
-        payload=loaded["payload"]
-    )
+    return loaded
+    # return Message(
+    #     timestamp=loaded["timestamp"],
+    #     device_id=loaded["device_id"],
+    #     streams=loaded["streams"],
+    #     payload=loaded["payload"]
+    # )
