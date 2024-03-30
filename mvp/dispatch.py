@@ -18,9 +18,9 @@ class Dispatch:
         port = int(os.environ['rLogLocalPORT'])
 
         print("dispatch online")
-        self.que_conn.send(b"hello")
-        resp = self.que_conn.recv(100)
-        print(f"init ping resp: {resp}")
+        # self.que_conn.send(b"hello")
+        # resp = self.que_conn.recv(100)
+        # print(f"init ping resp: {resp}")
 
         with self.cli_conn as s:
             s.bind((host, port))
@@ -48,10 +48,7 @@ class Dispatch:
                 self.kill_process()
 
     def kill_process(self):
-        self.cli_conn.shutdown()
         self.cli_conn.close()
-
-        self.que_conn.shutdown()
         self.que_conn.close()
         print("gracefull exit")
 

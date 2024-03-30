@@ -1,5 +1,5 @@
 from threading import Thread
-from socket import socket
+import socket
 from queue import Queue
 
 
@@ -14,46 +14,41 @@ class Queuer:
             msg = conn.recv(1024)
             if not msg:
                 break
-            print(f"got msg: {msg}")
-            conn.send(b"wassup")
+            # print(f"got msg: {msg}")
 
-        # self.q.put_nowait(msg)
+            if msg == b"pop":
+                last = self.q.get()
+                conn.send(last)
+            else:
+                self.q.put_nowait(msg)
 
-        conn.shutdown()
         conn.close()
         print("connection closed")
 
-    def handle_targets(self):
-        # allow multiple db handlers to pop
-        # data from single queue (h-scale)
-        pass
-
-    def enq(self):
-        # multiple clients
-        pass
-
-    def deq(self):
-        # single connection
-        pass
-
     def run_proc(self):
-        s = socket()
+        s = socket.socket()
+        s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        # s.setsockopt(socket.SO_REUSEADDR)
         s.bind(("localhost", 7777))
         print("queue online")
 
-        s.listen(2)
+        s.listen()
 
         try:
             while True:
                 conn, addr = s.accept()
+                print("accepted new connection")
                 t = Thread(target=self.handle_conn, args=[conn])
-                t.run()
+                # t.run()
+                t.start()
 
         except Exception as err:
             print(err)
 
+        except KeyboardInterrupt:
+            pass
+
         finally:
-            s.shutdown()
             s.close()
             print("Queue graceful exit")
 
