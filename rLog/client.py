@@ -22,7 +22,7 @@ class Client:
                 ts=int(time.time()),
                 device_id=self.cli_id,
                 streams=streams,
-                data=payload
+                payload=payload
                 )
             )
         resp = self.s.recv(1024)
@@ -39,13 +39,25 @@ class Client:
 if __name__ == "__main__":
     cli_id = input("Define client id: ")
     cli = Client(cli_id)
+    cli.connect()
 
-    while True:
-        resp = cli.send(
-                streams=["csv", "psql"],
-                payload={
-                    "temperature": 12,
-                    "humidity": 65,
-                    }
-                )
-        time.sleep(2)
+    try:
+        while True:
+            resp = cli.send(
+                    streams=["csv", "psql"],
+                    payload={
+                        "temperature": 12,
+                        "humidity": 65,
+                        }
+                    )
+            print(f"srv resp: {resp}")
+            time.sleep(2)
+
+    except Exception as err:
+        raise err
+
+    except KeyboardInterrupt:
+        pass
+
+    finally:
+        cli.close()
