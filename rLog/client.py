@@ -1,56 +1,51 @@
-# import os
+import os
 import time
 import socket
-from rLog import logger
-# from random import randint
-from rLog.picklers import serialize
+from rLog.parsing import serialize
+from rLog.models import ServerResponse
 
 
 class Client:
     def __init__(self, client_id: str):
-        cntr = 0
-        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-            s.connect((
-                "172.104.238.117",
-                9898
-                ))
-            try:
-                while True:
-                    s.sendall(
-                        serialize(
-                            ts=int(time.time()), device_id=str(client_id),
-                            streams=["csv", "psql"],
-                            data=cntr,
-                            # temperature=randint(-4, 37),
-                            # humidity=randint(63, 87),
-                            # state=randint(1, 7)
-                        )
-                    )
-                    cntr += 1
-                    resp = s.recv(1024)
-                    if not resp:
-                        logger.info("Remote is offline")
-                        break
-                    else:
-                        logger.info(f"server resp: {resp}")
+        self.cli_id = client_id
+        self.s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
-                    time.sleep(2)
+    def connect(self):
+        self.s.connect((
+            str(os.environ["rLogRemoteIP"]),
+            int(os.environ["rLogRemotePORT"])
+            ))
 
-            except Exception as err:
-                raise err
+    def send(self, streams: list, payload: dict) -> ServerResponse:
+        self.s.sendall(
+            serialize(
+                ts=int(time.time()),
+                device_id=self.cli_id,
+                streams=streams,
+                data=payload
+                )
+            )
+        resp = self.s.recv(1024)
+        if not resp:
+            return ServerResponse("Remote is offline")
 
-            finally:
-                s.close()
-                logger.info("Graceful exit")
+        else:
+            return ServerResponse(resp)
 
-    def run_process(self):
-        pass
-
-    def kill_process(self):
-        pass
+    def close(self):
+        self.s.close()
 
 
 if __name__ == "__main__":
-    cli_id = input("add client id: ")
-    asdf = Client(cli_id)
+    cli_id = input("Define client id: ")
+    cli = Client(cli_id)
 
+    while True:
+        resp = cli.send(
+                streams=["csv", "psql"],
+                payload={
+                    "temperature": 12,
+                    "humidity": 65,
+                    }
+                )
+        time.sleep(2)
