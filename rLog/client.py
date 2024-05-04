@@ -3,6 +3,7 @@ import time
 import socket
 from rLog.parsing import serialize
 from rLog.models import ServerResponse
+from rLog import logger
 
 
 class Client:
@@ -14,7 +15,8 @@ class Client:
         self.s.connect((
             str(os.environ["rLogRemoteIP"]),
             int(os.environ["rLogRemotePORT"])
-            ))
+        ))
+        logger.info("socket connect")
 
     def send(self, streams: list, payload: dict) -> ServerResponse:
         self.s.sendall(
@@ -23,9 +25,10 @@ class Client:
                 device_id=self.cli_id,
                 streams=streams,
                 payload=payload
-                )
             )
+        )
         resp = self.s.recv(1024)
+        logger.debug(f"server response: {resp}")
         if not resp:
             return ServerResponse("Remote is offline")
 
@@ -34,6 +37,7 @@ class Client:
 
     def close(self):
         self.s.close()
+        logger.info("socket disconnect")
 
 
 if __name__ == "__main__":
@@ -44,13 +48,13 @@ if __name__ == "__main__":
     try:
         while True:
             resp = cli.send(
-                    streams=["csv", "psql"],
-                    payload={
-                        "temperature": 12,
-                        "humidity": 65,
-                        }
-                    )
-            print(f"srv resp: {resp}")
+                streams=["csv", "psql"],
+                payload={
+                    "temperature": 12,
+                    "humidity": 65,
+                }
+            )
+            logger.info(f"srv resp: {resp}")
             time.sleep(2)
 
     except Exception as err:
