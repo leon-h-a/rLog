@@ -1,4 +1,3 @@
-from rLog import logger
 """
 'message' -> Handler -> Queue -> Poper
 
@@ -19,20 +18,44 @@ service.handler:
 service.poper:
     * Store all streams to be able to use its generate methods -> ORM/SQL
 """
-
+import json
 from abc import ABCMeta
+from rLog.responses import Error, Valid
+from rLog import logger
 
 
 class Stream(metaclass=ABCMeta):
     name: str
 
-    def sanitize():
+    def __init__(self):
+        self.resp = {
+            "timestamp": "Field 'timestamp' is not present",
+            "streams": "Value 'csv' not present in streams field",
+            "payload": "Field 'payload' is not present"
+        }
+
+    def _sanitize_required(self, msg: str):
+        try:
+            json.loads(str(msg).replace("'", '"'))
+            for key in self.resp.keys():
+                msg[key]
+
+        except KeyError as e:
+            return Error(text=self.resp[e.args[0]])
+
+        except Exception as e:
+            raise e
+            return Error(text=str(e))
+
+        return Valid(text="Message passed to queue")
+
+    def sanitize(self, msg: str):
         """
         check data validity and respond with ACK/NACK
         """
         raise NotImplementedError
 
-    def generate():
+    def generate(self):
         """
         generate object ready for storage
         """
@@ -42,18 +65,32 @@ class Stream(metaclass=ABCMeta):
 class CSV(Stream):
     name = "csv"
 
-    def sanitize(self):
-        pass
+    def __init__(self):
+        super().__init__()
+        # add additional fields that are needed in dequeuer.py
+        self.resp["filepath"] = "Field 'filepath' is not present"
 
-    def generate():
+    def sanitize(self, msg: str):
+        basic_check = self._sanitize_required(msg=msg)
+        # Implement optional checks
+        return basic_check
+
+    def generate(self):
         pass
 
 
 class Influx(Stream):
     name = "influx"
 
-    def sanitize(self):
-        pass
+    def __init__(self):
+        super().__init__()
+        # add additional fields that are needed in dequeuer.py
+        self.resp["bucket"] = "Field 'bucket' is not present"
+
+    def sanitize(self, msg: str):
+        basic_check = self._sanitize_required(msg=msg)
+        # Implement optional checks
+        return basic_check
 
     def generate(self):
         pass
