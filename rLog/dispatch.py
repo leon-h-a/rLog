@@ -1,8 +1,7 @@
-import os
 import socket
-from rLog import logger
+from threading import Thread
 from rLog.handler import Handler
-from multiprocessing import Process
+from rLog import logger
 
 
 class Dispatch:
@@ -10,25 +9,28 @@ class Dispatch:
         self.active_handlers = []
 
     def handle_clients(self):
-        host = os.environ['rLogLocalIP']
-        port = int(os.environ['rLogLocalPORT'])
+        host = "0.0.0.0"
+        port = 9898
 
-        logger.info("Dispatch is online")
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         s.bind((host, port))
+
+        logger.info("dispatch is online")
         s.listen()
 
         while True:
-            # todo: tls, auth, ddos
             conn, addr = s.accept()
             handler = Handler(conn=conn)
-            proc = Process(target=handler.handle_client)
-            proc.start()
-            self.active_handlers.append(proc)
+            t = Thread(target=handler.handle_client)
+            t.start()
+            logger.debug("new handler dispatched")
+            self.active_handlers.append(t)
 
     def shutdown(self):
         for proc in self.active_handlers:
             proc.terminate()
+        logger.info("dispatch is offline")
 
 
 if __name__ == "__main__":
