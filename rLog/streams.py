@@ -35,6 +35,7 @@ class Stream(metaclass=ABCMeta):
         }
 
     def _sanitize_required(self, msg: str):
+        logger.debug(msg)
         try:
             json.loads(str(msg).replace("'", '"'))
             for key in self.resp.keys():
@@ -72,7 +73,7 @@ class CSV(Stream):
 
     def sanitize(self, msg: str):
         basic_check = self._sanitize_required(msg=msg)
-        # Implement optional checks
+        # Add specific checks
         return basic_check
 
     def generate(self):
@@ -89,7 +90,7 @@ class Influx(Stream):
 
     def sanitize(self, msg: str):
         basic_check = self._sanitize_required(msg=msg)
-        # Implement optional checks
+        # Add specific checks
         return basic_check
 
     def generate(self):
