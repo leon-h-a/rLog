@@ -52,10 +52,10 @@ if __name__ == "__main__":
                 payload={
                     "temperature": 12,
                     "humidity": 65,
-                }
-            )
-            logger.info(f"srv resp: {resp}")
-            time.sleep(2)
+                    }
+                )
+            print(f"srv resp: {resp}")
+            time.sleep(1)
 
     except Exception as err:
         raise err
