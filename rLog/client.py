@@ -1,15 +1,18 @@
 import os
 import time
+import json
 import socket
-from rLog.parsing import serialize
-from rLog.models import ServerResponse
 from rLog import logger
+from rLog.responses import SrvResp
 
 
 class Client:
     def __init__(self, client_id: str):
         self.cli_id = client_id
         self.s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+
+    def _serialize(self, msg: dict) -> bytes:
+        return bytes(json.dumps(msg), "ascii")
 
     def connect(self):
         self.s.connect((
@@ -18,22 +21,15 @@ class Client:
         ))
         logger.info("socket connect")
 
-    def send(self, streams: list, payload: dict) -> ServerResponse:
-        self.s.sendall(
-            serialize(
-                ts=int(time.time()),
-                device_id=self.cli_id,
-                streams=streams,
-                payload=payload
-            )
-        )
+    def send(self, msg: dict) -> SrvResp:
+        self.s.sendall(self._serialize(dict(msg)))
         resp = self.s.recv(1024)
         logger.debug(f"server response: {resp}")
-        if not resp:
-            return ServerResponse("Remote is offline")
 
+        if not resp:
+            return "Remote is offline"
         else:
-            return ServerResponse(resp)
+            return resp
 
     def close(self):
         self.s.close()
