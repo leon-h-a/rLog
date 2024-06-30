@@ -1,6 +1,6 @@
 import socket
-from threading import Thread
-from rLog.handler import Handler
+from multiprocessing import Process
+from rLog.server.utils.q_enque import Enqueuer
 from rLog.server import logger
 
 
@@ -19,13 +19,23 @@ class ServerBasic:
         logger.info("server is online")
         s.listen()
 
-        while True:
-            conn, addr = s.accept()
-            handler = Handler(conn=conn)
-            t = Thread(target=handler.handle_client)
-            t.start()
-            logger.debug("new handler dispatched")
-            self.active_handlers.append(t)
+        try:
+            while True:
+                conn, addr = s.accept()
+                handler = Enqueuer(conn=conn)
+                t = Process(target=handler.handle_client)
+                t.start()
+                logger.info("new handler dispatched")
+                self.active_handlers.append(t)
+
+        except KeyboardInterrupt:
+            self.shutdown()
+
+        except Exception as e:
+            raise e
+
+        finally:
+            self.shutdown()
 
     def shutdown(self):
         for proc in self.active_handlers:

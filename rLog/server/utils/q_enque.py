@@ -1,9 +1,9 @@
 import socket
 import inspect
 from abc import ABCMeta
-import rLog.streams as sms
-from rLog.streams import Stream
-from rLog import logger
+import rLog.server.utils.streams as sms
+from rLog.server.streams import Stream
+from rLog.server import logger
 
 classes = inspect.getmembers(sms, inspect.isclass)
 streams = [
@@ -25,6 +25,7 @@ class Enqueuer:
             data = self.cli_conn.recv(1024)
             if not data:
                 logger.info("client closed connection")
+                self.que_conn.send(b"")  # Trigger queue handler close conn
                 break
 
             else:

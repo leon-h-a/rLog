@@ -1,31 +1,12 @@
-"""
-'message' -> Handler -> Queue -> Poper
-
-Handler:
-    * Read which stream the message belongs to
-    * Use Stream.sanitize (ack/nack resp)
-    * Read Stream.queue (ip:port) and append
-        - add static route defs (influx, csv, psql queues)
-
-Poper:
-    * Read which stream the message belongs to
-    * Use Stream.generate (ORM/SQL) and write to db
-    * ? Custom fields for ie csv dir and auto rotation
-
-service.handler:
-    * Store all streams to be able to use its sanitize methods -> str
-
-service.poper:
-    * Store all streams to be able to use its generate methods -> ORM/SQL
-"""
 import json
 from abc import ABCMeta
 from rLog.responses import Error, Valid
-from rLog import logger
+from rLog.server import logger
 
 
 class Stream(metaclass=ABCMeta):
     name: str
+    port: None
 
     def __init__(self):
         self.resp = {
@@ -65,6 +46,7 @@ class Stream(metaclass=ABCMeta):
 
 class CSV(Stream):
     name = "csv"
+    port = 8810
 
     def __init__(self):
         super().__init__()
@@ -82,6 +64,7 @@ class CSV(Stream):
 
 class Influx(Stream):
     name = "influx"
+    port = 8811
 
     def __init__(self):
         super().__init__()
