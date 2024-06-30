@@ -1,7 +1,7 @@
 import socket
 import inspect
 from abc import ABCMeta
-import rLog.server.utils.streams as sms
+import rLog.server.streams as sms
 from rLog.server.streams import Stream
 from rLog.server import logger
 
@@ -16,22 +16,27 @@ class Enqueuer:
     def __init__(self, conn: socket):
         self.cli_conn = conn
         self.que_conn = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.que_conn.connect(("0.0.0.0", 7777))
-        logger.info("enque is online")
+        # todo: read message and then connect to queues if not already conn
+        # self.que_conn.connect(("0.0.0.0", 7777))
+        logger.info(f"[{self.cli_conn}] new connection")
 
     def handle_client(self):
-        logger.info("new handler instance running")
+        logger.info(f"[{self.cli_conn}] running")
         while True:
             data = self.cli_conn.recv(1024)
+
+            # todo: check if queue connection, if not create
+            #       keep timeout and close if not used
+
             if not data:
-                logger.info("client closed connection")
+                logger.info(f"[{self.cli_conn}] closed connection")
                 self.que_conn.send(b"")  # Trigger queue handler close conn
                 break
 
             else:
                 logger.debug(f"client sent: {data}")
 
-                # todo: parse data as defined in streams.py
+                # todo: parse data by using streams.py
 
                 self.que_conn.send(data)
                 q_resp = self.que_conn.recv(1024)
