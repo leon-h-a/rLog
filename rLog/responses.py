@@ -1,18 +1,25 @@
+import json
 from abc import ABCMeta
-from dataclasses import dataclass
+from typing_extensions import Literal
 
 
-@dataclass
 class SrvResp(metaclass=ABCMeta):
-    text: str
+    resp_type = Literal["ACK", "NACK"]
 
-    def __init__(self, text: str):
-        self.text = text
+    def __new__(cls, msg: str):
+        return bytes(
+            json.dumps(
+                {
+                    "resp": cls.resp_type,
+                    "msg": msg
+                }
+            ).encode("utf8")
+        )
 
 
 class Error(SrvResp):
-    pass
+    resp_type = "NACK"
 
 
 class Valid(SrvResp):
-    pass
+    resp_type = "ACK"
