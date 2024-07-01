@@ -2,7 +2,7 @@
 
 Many-to-many logging system
 
-![system_diagram](docs/img/rlog_base_rev2.png)
+![system_diagram](https://github.com/leon-h-a/rLog/blob/main/docs/img/rLog.gif)
 
 ### Dispatch
 Dispatch instantiates handler child processes
