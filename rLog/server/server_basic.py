@@ -23,9 +23,9 @@ class ServerBasic:
             while True:
                 conn, addr = s.accept()
                 handler = Enqueuer(conn=conn)
+                logger.info(f"[{conn.getpeername()[0]}] handler dispatch")
                 t = Process(target=handler.handle_client)
                 t.start()
-                logger.info("new handler dispatched")
                 self.active_handlers.append(t)
 
         except KeyboardInterrupt:
