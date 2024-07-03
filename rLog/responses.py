@@ -6,15 +6,19 @@ from typing_extensions import Literal
 class SrvResp(metaclass=ABCMeta):
     resp_type = Literal["ACK", "NACK"]
 
-    def __new__(cls, msg: str):
-        return bytes(
-            json.dumps(
+    def __new__(cls, msg: str, byte_rep: bool = True):
+        resp = json.dumps(
                 {
                     "resp": cls.resp_type,
                     "msg": msg
                 }
-            ).encode("utf8")
-        )
+            )
+
+        if byte_rep:
+            return bytes(resp, "utf8")
+        else:
+            # Used when multiple dumps are concatenated to single sock msg
+            return resp
 
 
 class Error(SrvResp):
