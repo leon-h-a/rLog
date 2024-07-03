@@ -2,7 +2,7 @@ import json
 import socket
 from rLog.server import logger
 from rLog.server.streams import Stream
-from rLog.responses import Valid, Error
+from rLog.responses import Error
 
 
 class Enqueuer:
@@ -23,12 +23,19 @@ class Enqueuer:
             data = self.cli_conn.recv(1024)
             if not data:
                 logger.info(f"[{self.peer}] client diconnected")
-                # todo: break queue connections before exiting
+                for q_conn in self.streams.keys():
+                    if (stream := self.streams[q_conn])["q_sock"]:
+                        stream["q_sock"].close()
+                        logger.info(
+                            f"[{self.peer}] queue {q_conn} "
+                            f"[{stream['stream_def'].port}] diconnected"
+                        )
                 break
 
             payload = json.loads(data)
             print(payload)
 
+            resp = dict()
             # +------------------------------+
             # |   Queue handling             |
             # +------------------------------+
@@ -38,11 +45,14 @@ class Enqueuer:
 
             except KeyError:
                 self.cli_conn.send(Error("No outputs field"))
+                # todo: append to response
+                continue
 
             outputs = payload["outputs"]
             for output in outputs:
                 if output not in self.streams.keys():
                     self.cli_conn.send(Error("Output not supported"))
+                    # todo: append to response
                     continue
                 else:
                     stream = self.streams[output]
@@ -60,22 +70,34 @@ class Enqueuer:
 
                     except ConnectionRefusedError:
                         self.cli_conn.send(Error("Queue offline"))
+                        continue
 
-                    except Exception as e:
-                        raise e
-
-            self.cli_conn.send(Valid("Good msg"))
+                    # except Exception as e:
+                    #     self.cli_conn.send(Error(str(e)))
+                    #     raise e
 
             # +------------------------------+
-            # |   Message sanitization       |
+            # |   Payload sanitization       |
             # +------------------------------+
-            # todo: parse data by using streams.py
-            pass
+            for output in outputs:
+                resp[output] = (
+                    self.streams[output]["stream_def"].input_sanitize(payload)
+                )
 
             # +------------------------------+
             # |   Enque                      |
             # +------------------------------+
             pass
+
+            # +------------------------------+
+            # |   Cumulative response        |
+            # +------------------------------+
+            # Collect responses from queues and combine them in single
+            # response (use dict to json)
+            pass
+
+            print(resp)
+            self.cli_conn.send(json.dumps(resp).encode("utf8"))
 
 
 if __name__ == "__main__":
