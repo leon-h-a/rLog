@@ -16,17 +16,17 @@ class QueueManager:
                 if stream.port is None:
                     continue
                 q_instance = QueueInstance()
-                t = Process(
+                p = Process(
                     target=q_instance.run,
                     kwargs={
-                            "type": stream.name,
+                            "q_type": stream.name,
                             "port": stream.port,
                             "logger": logger
                         }
                     )
-                t.start()
-                logger.info("new handler dispatched")
-                self.active_queues.append(t)
+                p.start()
+                logger.info("queue proc dispatched")
+                self.active_queues.append(p)
 
             os.wait()
 
