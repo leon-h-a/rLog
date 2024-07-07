@@ -1,6 +1,5 @@
 import socket
-from multiprocessing import Process
-from queue import Queue
+from multiprocessing import Process, Queue
 from logging import Logger
 from rLog.server import logger
 
@@ -11,23 +10,33 @@ class QueueInstance:
         self.handlers = list()
         self.type = None
 
-    def handle_request(self, conn: socket, logger: Logger):
+    def handle_request(
+            self,
+            q_type: str,
+            q_port: int,
+            cli: socket,
+            q: Queue,
+            logger: Logger
+            ):
+
+        logger.info(f"[{q_type}] new handler")
         while True:
-            msg = conn.recv(1024)
+            msg = cli.recv(1024)
+
             if not msg:
-                logger.info("handler closed connection")
+                logger.info(f"[{q_type}] handler disconnected")
                 # determine if disconnect from enque or deque
                 break
 
             if msg == b"pop":
-                last = self.q.get()
-                conn.send(last)
-                logger.debug(f"dequed: {last}")
+                last = q.get(block=True)
+                cli.send(last)
+                logger.info(f"[{q_type}] dequed: {last}")
 
             else:
-                self.q.put_nowait(msg)
-                logger.info(f"enqued: {msg}")
-                conn.send(bytes("ACK", "ascii"))
+                q.put(msg)
+                logger.info(f"[{q_type}] enqued: {msg}")
+                cli.send(bytes("ACK", "ascii"))
 
     def run(self, q_type: str, port: int, logger: Logger):
         self.type = q_type
@@ -41,16 +50,18 @@ class QueueInstance:
         try:
             while True:
                 conn, addr = s.accept()
-                logger.info("new handler requested connection")
-                t = Process(
+                p = Process(
                     target=self.handle_request,
                     kwargs={
-                        "conn": conn,
+                        "q_type": q_type,
+                        "q_port": port,
+                        "cli": conn,
+                        "q": self.q,
                         "logger": logger
                     }
                 )
-                self.handlers.append(t)
-                t.start()
+                self.handlers.append(p)
+                p.start()
 
         except KeyboardInterrupt:
             pass

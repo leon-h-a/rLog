@@ -1,8 +1,8 @@
 import json
 import socket
 from rLog.server import logger
-from rLog.server.streams import Stream
-from rLog.responses import Error
+from rLog.streams import Stream
+from rLog.server.responses import Valid, Error
 
 
 class Enqueuer:
@@ -13,46 +13,44 @@ class Enqueuer:
         self.streams = dict()
         for stream in Stream.__subclasses__():
             self.streams[stream.name] = dict(
-                stream_def=stream,
+                stream=stream,
                 q_sock=None
             )
 
     def handle_client(self):
         logger.info(f"[{self.peer}] handler running")
+
         while True:
             data = self.cli_conn.recv(1024)
             if not data:
-                logger.info(f"[{self.peer}] client diconnected")
+                logger.info(f"[{self.peer}] client disconnected")
                 for q_conn in self.streams.keys():
                     if (stream := self.streams[q_conn])["q_sock"]:
+                        stream["q_sock"].shutdown(socket.SHUT_RDWR)
                         stream["q_sock"].close()
                         logger.info(
                             f"[{self.peer}] queue {q_conn} "
-                            f"[{stream['stream_def'].port}] diconnected"
+                            f"[{stream['stream'].port}] disconnected"
                         )
                 break
 
             payload = json.loads(data)
-            print(payload)
-
             resp = dict()
-            # +------------------------------+
-            # |   Queue handling             |
-            # +------------------------------+
             try:
-                if not payload["outputs"]:
-                    self.cli_conn.send(Error("Outputs field is empty"))
+                if not payload["streams"]:
+                    self.cli_conn.send(Error("Streams field is empty"))
 
             except KeyError:
-                self.cli_conn.send(Error("No outputs field"))
-                # todo: append to response
+                self.cli_conn.send(Error("No streams field"))
                 continue
 
-            outputs = payload["outputs"]
+            outputs = payload["streams"]
             for output in outputs:
                 if output not in self.streams.keys():
-                    self.cli_conn.send(Error("Output not supported"))
-                    # todo: append to response
+                    resp[output] = Error("Stream not supported", False)
+                    continue
+                if not self.streams[output]["stream"].enabled:
+                    resp[output] = Error("Stream disabled on remote", False)
                     continue
                 else:
                     stream = self.streams[output]
@@ -64,40 +62,33 @@ class Enqueuer:
                             socket.AF_INET, socket.SOCK_STREAM
                         )
                         q_sock.connect((
-                            "localhost", stream["stream_def"].port
+                            "localhost", stream["stream"].port
                         ))
                         self.streams[output]["q_sock"] = q_sock
 
                     except ConnectionRefusedError:
-                        self.cli_conn.send(Error("Queue offline"))
+                        resp[output] = Error("Queue offline", False)
                         continue
 
-                    # except Exception as e:
-                    #     self.cli_conn.send(Error(str(e)))
-                    #     raise e
+                    except Exception as e:
+                        resp[output] = Error(str(e), False)
+                        raise e
 
-            # +------------------------------+
-            # |   Payload sanitization       |
-            # +------------------------------+
-            for output in outputs:
                 resp[output] = (
-                    self.streams[output]["stream_def"].input_sanitize(payload)
+                    self.streams[output]["stream"].input_sanitize(payload)
                 )
 
-            # +------------------------------+
-            # |   Enque                      |
-            # +------------------------------+
-            pass
+                try:
+                    self.streams[output]["q_sock"].send(bytes(
+                        json.dumps(payload), "ascii"
+                        )
+                    )
+                    resp[output] = Valid("Message enqued", False)
 
-            # +------------------------------+
-            # |   Cumulative response        |
-            # +------------------------------+
-            # Collect responses from queues and combine them in single
-            # response (use dict to json)
-            pass
+                except Exception as e:
+                    resp[output] = Error(str(e), False)
 
-            print(resp)
-            self.cli_conn.send(json.dumps(resp).encode("utf8"))
+            self.cli_conn.send(json.dumps(resp).encode("ascii"))
 
 
 if __name__ == "__main__":

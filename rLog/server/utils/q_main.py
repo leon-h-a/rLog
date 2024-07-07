@@ -1,9 +1,9 @@
 import os
 from queue import Queue
-from rLog.server.utils.q_instance import QueueInstance
 from multiprocessing import Process
-from rLog.server.streams import Stream
+from rLog.streams import Stream
 from rLog.server import logger
+from rLog.server.utils.q_instance import QueueInstance
 
 
 class QueueManager:
