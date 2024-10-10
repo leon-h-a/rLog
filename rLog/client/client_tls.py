@@ -2,7 +2,6 @@ import ssl
 import json
 import socket
 from rLog import logger
-from rLog.responses import SrvResp
 
 
 class ClientTLS:
@@ -25,7 +24,7 @@ class ClientTLS:
         self.ss.connect((self.host, self.port))
         logger.info("socket connect")
 
-    def send(self, msg: dict) -> SrvResp:
+    def send(self, msg: dict):
         self.s.sendall(self._serialize(dict(msg)))
         resp = self.s.recv(1024)
         logger.debug(f"server response: {resp}")

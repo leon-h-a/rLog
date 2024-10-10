@@ -1,7 +1,6 @@
 import json
 import socket
 from rLog.client import logger
-from rLog.responses import SrvResp
 
 
 class ClientBasic:
@@ -18,7 +17,7 @@ class ClientBasic:
         self.s.connect((self.host, self.port))
         logger.info("socket connect")
 
-    def send(self, msg: dict) -> SrvResp:
+    def send(self, msg: dict):
         self.s.sendall(self._serialize(dict(msg)))
         resp = self.s.recv(1024)
         logger.debug(f"server response: {resp}")
