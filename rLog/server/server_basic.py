@@ -11,7 +11,7 @@ class ServerBasic:
 
         self.active_handlers = []
 
-    def handle_clients(self):
+    def run(self):
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         s.bind((self.host, self.port))

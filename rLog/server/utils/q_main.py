@@ -7,12 +7,14 @@ from rLog.server.utils.q_instance import QueueInstance
 
 
 class QueueManager:
-    def __init__(self):
+    def __init__(self, stream: Stream):
+        self.stream = stream
         self.q = Queue()
         self.active_queues = list()
 
+    def run(self):
         try:
-            for stream in Stream.__subclasses__():
+            for stream in self.stream.__subclasses__():
                 if stream.port is None:
                     continue
                 q_instance = QueueInstance()
@@ -25,7 +27,6 @@ class QueueManager:
                         }
                     )
                 p.start()
-                logger.info("queue proc dispatched")
                 self.active_queues.append(p)
 
             os.wait()
@@ -42,7 +43,7 @@ class QueueManager:
     def shutdown(self):
         for proc in self.active_queues:
             proc.terminate()
-        logger.info("queue manager is offline")
+        logger.info("queue manager offline")
 
 
 if __name__ == "__main__":

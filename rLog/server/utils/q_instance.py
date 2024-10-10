@@ -21,22 +21,28 @@ class QueueInstance:
 
         logger.info(f"[{q_type}] new handler")
         while True:
-            msg = cli.recv(1024)
+            try:
+                msg = cli.recv(1024)
 
-            if not msg:
-                logger.info(f"[{q_type}] handler disconnected")
-                # determine if disconnect from enque or deque
-                break
+                if not msg:
+                    logger.info(f"[{q_type}] handler disconnected")
+                    # determine if disconnect from enque or deque
+                    break
 
-            if msg == b"pop":
-                last = q.get(block=True)
-                cli.send(last)
-                logger.info(f"[{q_type}] dequed: {last}")
+                if msg == b'pop':
+                    if q.empty():
+                        cli.send(bytes("empty", "utf-8"))
+                    else:
+                        last = q.get()
+                        logger.info(f"[{q_type}] dequed: {last}")
 
-            else:
-                q.put(msg)
-                logger.info(f"[{q_type}] enqued: {msg}")
-                cli.send(bytes("ACK", "ascii"))
+                else:
+                    q.put(msg)
+                    logger.info(f"[{q_type}] enqued: {msg}")
+                    cli.send(bytes("ACK", "ascii"))
+
+            except KeyboardInterrupt:
+                pass
 
     def run(self, q_type: str, port: int, logger: Logger):
         self.type = q_type
@@ -44,7 +50,7 @@ class QueueInstance:
         s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         s.bind(("localhost", port))
 
-        logger.info(f"queue [{q_type}] listening on port: {port}")
+        logger.info(f"queue [{q_type}] ready on port: {port}")
         s.listen()
 
         try:
@@ -75,7 +81,7 @@ class QueueInstance:
     def shutdown(self):
         for proc in self.handlers:
             proc.terminate()
-        logger.info(f"queue [{self.type}] offline")
+        logger.info(f"queue [{self.type}] shutdown")
 
 
 if __name__ == "__main__":
