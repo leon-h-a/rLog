@@ -1,8 +1,8 @@
 import json
 import socket
 from rLog.server import logger
-from rLog.streams import Stream
-from rLog.server.responses import Valid, Error
+from rLog.server.streams import Stream
+from rLog.server.utils.responses import Valid, Error
 
 
 class Enqueuer:
@@ -38,19 +38,19 @@ class Enqueuer:
             resp = dict()
             try:
                 if not payload["streams"]:
-                    self.cli_conn.send(Error("Streams field is empty"))
+                    self.cli_conn.send(Error("Streams field is empty").to_bytes())
 
             except KeyError:
-                self.cli_conn.send(Error("No streams field"))
+                self.cli_conn.send(Error("No streams field").to_bytes())
                 continue
 
             outputs = payload["streams"]
             for output in outputs:
                 if output not in self.streams.keys():
-                    resp[output] = Error("Stream not supported", False)
+                    resp[output] = Error("Stream not supported")
                     continue
                 if not self.streams[output]["stream"].enabled:
-                    resp[output] = Error("Stream disabled on remote", False)
+                    resp[output] = Error("Stream disabled on remote")
                     continue
                 else:
                     stream = self.streams[output]
@@ -67,26 +67,32 @@ class Enqueuer:
                         self.streams[output]["q_sock"] = q_sock
 
                     except ConnectionRefusedError:
-                        resp[output] = Error("Queue offline", False)
+                        resp[output] = Error("Queue offline")
                         continue
 
                     except Exception as e:
-                        resp[output] = Error(str(e), False)
+                        resp[output] = Error(str(e))
                         raise e
 
-                resp[output] = (
+                sanitize = (
                     self.streams[output]["stream"].input_sanitize(payload)
                 )
 
-                try:
-                    self.streams[output]["q_sock"].send(bytes(
-                        json.dumps(payload), "ascii"
-                        )
-                    )
-                    resp[output] = Valid("Message enqued", False)
+                if isinstance(sanitize, Error):
+                    resp[output] = sanitize
 
-                except Exception as e:
-                    resp[output] = Error(str(e), False)
+                else:
+                    try:
+                        self.streams[output]["q_sock"].send(bytes(
+                            json.dumps(payload), "ascii"
+                            )
+                        )
+                        resp[output] = Valid("Message enqued")
+
+                    except Exception as e:
+                        resp[output] = Error(str(e))
+
+                resp[output] = resp[output].to_json()
 
             self.cli_conn.send(json.dumps(resp).encode("ascii"))
 

@@ -3,7 +3,7 @@ import time
 import json
 import socket
 from multiprocessing import Process
-from rLog.streams import Stream
+from rLog.server.streams import Stream
 from rLog.server import logger
 
 
@@ -33,12 +33,7 @@ class DequeueInstance:
         if data == b"":
             raise BrokenPipeError
 
-        elif data == b"empty":
-            logger.debug(f"[{self.stream.name}] queue is empty")
-            return None
-
         else:
-            logger.debug(data)
             return data
 
     def handle_queue(self):
@@ -48,13 +43,11 @@ class DequeueInstance:
                 self._queue_connect()
 
                 while True:
-                    if (data := self._deque_message()):
-                        self.stream.output_generate(
-                            payload=json.loads(data),
-                            db_conn=self.db
-                        )
-                    else:
-                        time.sleep(2)
+                    data = self._deque_message()
+                    self.stream.output_generate(
+                        payload=json.loads(data),
+                        db_conn=self.db
+                    )
 
             except ConnectionRefusedError:
                 logger.warning(f"[{self.stream.name}] ConnectionRefusedError")
@@ -95,8 +88,10 @@ class Dequeuer:
         try:
             for stream in self.stream.__subclasses__():
                 if stream.port is None:
+                    logger.warning(f"[{stream}] does not have defined q port")
                     continue
                 if not stream.enabled:
+                    logger.warning(f"[{stream}] is not enabled")
                     continue
                 dq_instance = DequeueInstance(stream)
                 p = Process(
